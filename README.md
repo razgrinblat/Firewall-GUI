@@ -1,0 +1,1 @@
+This repository contains a web-based GUI for managing and visualizing firewall configurations, built with React and Material UI, enabling real-time monitoring and rule management for a custom DPDK-based firewall. 
