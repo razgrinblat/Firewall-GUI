@@ -5,6 +5,7 @@ const firewallWS = require("./websocket/firewallWS");
 const statsRoutes = require("./routes/statsRoutes");
 const clientsRoutes = require("./routes/clientsRoutes");
 const connectionsRoutes = require("./routes/connectionsRoutes");
+const rulesRoutes = require("./routes/rulesRoutes");
 const cors = require("cors");
 
 const app = express();
@@ -18,6 +19,7 @@ app.use(express.json());
 app.use("/api", statsRoutes);
 app.use("/api", clientsRoutes);
 app.use("/api", connectionsRoutes);
+app.use("/api",rulesRoutes);
 
 // Create an HTTP server
 const server = http.createServer(app);

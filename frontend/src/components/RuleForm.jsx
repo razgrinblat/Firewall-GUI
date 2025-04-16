@@ -1,211 +1,282 @@
-// src/components/RuleForm.jsx
-import React, { useState } from "react";
-import {
-  Button,
-  TextField,
-  Grid,
-  Typography,
-  FormControlLabel,
-  Checkbox,
+//RuleForm
+import React, { useState, useEffect } from "react";
+import { 
+  Button, 
+  TextField, 
+  Grid, 
+  Typography, 
+  FormControlLabel, 
   FormControl,
+  FormHelperText,
   InputLabel,
-  MenuItem,
   Select,
-  Paper,
+  MenuItem,
+  Switch,
+  CircularProgress,
   Box,
   Divider,
-  List,
-  ListItem,
-  ListItemText,
-  IconButton,
-  CircularProgress
+  Card,
+  CardContent 
 } from "@mui/material";
-import { useWebSocket } from "../utils/websocketClient"; // Import WebSocket hook
-import DeleteIcon from '@mui/icons-material/Delete';
+import SaveIcon from "@mui/icons-material/Save";
+import CancelIcon from "@mui/icons-material/Cancel";
+import SecurityIcon from "@mui/icons-material/Security";
 
-const RuleForm = ({ rulesList, setRulesList }) => {
-  const [action, setAction] = useState("block");
-  const [protocol, setProtocol] = useState("tcp");
-  const [dstIp, setDstIp] = useState("*.*.*.*");
-  const [dstPort, setDstPort] = useState("23");
-  const [isActive, setIsActive] = useState(false);
-  const [ruleName, setRuleName] = useState(""); // Rule name (for UI only)
-  const [loading, setLoading] = useState(false); // Loading state for submit
-  const [error, setError] = useState(""); // Error message for validation
+const RuleForm = ({ onSave, loading, initialRule = null, onCancel }) => {
+  const [formData, setFormData] = useState({
+    name: "DNS Block",
+    action: "block",
+    protocol: "tcp",
+    dst_ip: "8.8.8.8",
+    dst_port: "53",
+    is_active: false
+  });
 
-  const ws = useWebSocket("ws://localhost:8080/firewall"); // Change URL as needed
+  const [errors, setErrors] = useState({
+    name: "",
+    dst_ip: "",
+    dst_port: ""
+  });
 
-  // Validation for IP address using regex
+  // Update form data when initialRule changes
+  useEffect(() => {
+    if (initialRule) {
+      setFormData({
+        name: initialRule.name || "",
+        action: initialRule.action || "block",
+        protocol: initialRule.protocol || "tcp",
+        dst_ip: initialRule.dst_ip || "",
+        dst_port: initialRule.dst_port || "",
+        is_active: Boolean(initialRule.is_active)
+      });
+    } else {
+      // Reset form to default values when there's no initialRule
+      setFormData({
+        name: "DNS Block",
+        action: "block",
+        protocol: "tcp",
+        dst_ip: "8.8.8.8",
+        dst_port: "53",
+        is_active: false
+      });
+    }
+    // Reset errors when initialRule changes
+    setErrors({
+      name: "",
+      dst_ip: "",
+      dst_port: ""
+    });
+  }, [initialRule]);
+
   const isValidIp = (ip) => {
+    // Allow specific IP or wildcard pattern (*.*.*.*)
+    if (ip === "*.*.*.*") return true;
+    
     const regex = /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
     return regex.test(ip);
   };
 
-  // Validation for port number (1 - 65535)
   const isValidPort = (port) => {
     const regex = /^[0-9]{1,5}$/;
-    return regex.test(port) && port >= 1 && port <= 65535;
+    return regex.test(port) && parseInt(port) >= 1 && parseInt(port) <= 65535;
+  };
+
+  const validateForm = () => {
+    const newErrors = {
+      name: !formData.name.trim() ? "Rule name is required" : "",
+      dst_ip: !isValidIp(formData.dst_ip) ? "Invalid IP address format" : "",
+      dst_port: !isValidPort(formData.dst_port) ? "Port must be between 1-65535" : ""
+    };
+
+    setErrors(newErrors);
+    return !Object.values(newErrors).some(error => error);
+  };
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+
+    // Clear error for this field if any
+    if (errors[name]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: ""
+      }));
+    }
   };
 
   const handleSubmit = () => {
-    // Validate that the rule name is provided
-    if (!ruleName.trim()) {
-      setError("Rule name is required.");
-      return;
+    if (validateForm()) {
+      // Send the rule to the parent component
+      onSave({
+        ...formData,
+        dst_port: parseInt(formData.dst_port)
+      });
     }
-
-    if (!isValidIp(dstIp)) {
-      alert("Invalid IP address");
-      return;
-    }
-    if (!isValidPort(dstPort)) {
-      alert("Invalid port number");
-      return;
-    }
-
-    // Clear previous error if all validations pass
-    setError("");
-
-    // Create the new rule object
-    const newRule = {
-      name: ruleName, // Name is now mandatory
-      action,
-      protocol,
-      dst_ip: dstIp,
-      dst_port: dstPort,
-      is_active: isActive,
-    };
-
-    // Add the new rule to the local state
-    setRulesList([...rulesList, newRule]);
-
-    // Create the JSON to send to the backend (with the "rules" key)
-    const rulesJson = { rules: [newRule] };
-    setLoading(true); // Set loading state to true while waiting for response
-    ws.sendMessage(JSON.stringify(rulesJson));
-
-    // Reset form fields
-    setRuleName(""); // Clear rule name
-    setDstIp(""); // Clear IP
-    setDstPort(""); // Clear port
-    setIsActive(false); // Reset active checkbox
   };
 
-  // Handle deleting a rule from the list
-  const handleDeleteRule = (index) => {
-    const newRulesList = rulesList.filter((_, idx) => idx !== index);
-    setRulesList(newRulesList);
-  };
+  const isEdit = Boolean(initialRule);
 
   return (
-    <Box component="div" sx={{ padding: 3 }}>
-      <Paper sx={{ padding: 3, marginBottom: 3 }}>
-        <Typography variant="h6" align="center" gutterBottom>
-          Create New Rule
-        </Typography>
-
-        {/* Show error message if rule name is not provided */}
-        {error && (
-          <Typography color="error" variant="body2" align="center" gutterBottom>
-            {error}
+    <Card sx={{ p: 2, mb: 2 }}>
+      <CardContent>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+          <SecurityIcon color="primary" sx={{ fontSize: 30, mr: 1 }} />
+          <Typography variant="h6">
+            {isEdit ? "Edit Firewall Rule" : "Create New Firewall Rule"}
           </Typography>
-        )}
-
-        <Grid container spacing={2} direction="row" alignItems="center" justifyContent="center">
-          <Grid item xs={12} sm={6} md={3}>
+        </Box>
+        
+        <Divider sx={{ mb: 3 }} />
+        
+        <Grid container spacing={3}>
+          {/* Rule Name */}
+          <Grid item xs={12}>
             <TextField
               label="Rule Name"
-              value={ruleName}
-              onChange={(e) => setRuleName(e.target.value)}
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
               fullWidth
               required
+              error={Boolean(errors.name)}
+              helperText={errors.name}
+              variant="outlined"
             />
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          
+          {/* Action */}
+          <Grid item xs={12} md={6}>
             <FormControl fullWidth>
-              <InputLabel>Protocol</InputLabel>
+              <InputLabel id="action-label">Action</InputLabel>
               <Select
-                value={protocol}
-                onChange={(e) => setProtocol(e.target.value)}
+                labelId="action-label"
+                id="action"
+                name="action"
+                value={formData.action}
+                label="Action"
+                onChange={handleChange}
+              >
+                <MenuItem value="block">Block</MenuItem>
+                <MenuItem value="accept">Accept</MenuItem>
+              </Select>
+              <FormHelperText>Select action to take when rule matches</FormHelperText>
+            </FormControl>
+          </Grid>
+          
+          {/* Protocol */}
+          <Grid item xs={12} md={6}>
+            <FormControl fullWidth>
+              <InputLabel id="protocol-label">Protocol</InputLabel>
+              <Select
+                labelId="protocol-label"
+                id="protocol"
+                name="protocol"
+                value={formData.protocol}
                 label="Protocol"
+                onChange={handleChange}
               >
                 <MenuItem value="tcp">TCP</MenuItem>
                 <MenuItem value="udp">UDP</MenuItem>
               </Select>
+              <FormHelperText>Network protocol to match</FormHelperText>
             </FormControl>
           </Grid>
-
-          <Grid item xs={12} sm={6} md={3}>
+          
+          {/* Destination IP */}
+          <Grid item xs={12} md={6}>
             <TextField
               label="Destination IP"
-              value={dstIp}
-              onChange={(e) => setDstIp(e.target.value)}
+              name="dst_ip"
+              value={formData.dst_ip}
+              onChange={handleChange}
               fullWidth
+              required
+              error={Boolean(errors.dst_ip)}
+              helperText={errors.dst_ip || "IP address (e.g., 8.8.8.8 or *.*.*.*)"}
+              variant="outlined"
             />
           </Grid>
-
-          <Grid item xs={12} sm={6} md={3}>
+          
+          {/* Destination Port */}
+          <Grid item xs={12} md={6}>
             <TextField
               label="Destination Port"
-              value={dstPort}
-              onChange={(e) => setDstPort(e.target.value)}
+              name="dst_port"
+              value={formData.dst_port}
+              onChange={handleChange}
               fullWidth
+              required
+              error={Boolean(errors.dst_port)}
+              helperText={errors.dst_port || "Port number (1-65535)"}
+              variant="outlined"
+              type="number"
+              inputProps={{ min: 1, max: 65535 }}
             />
           </Grid>
-
+          
+          {/* Active Status */}
           <Grid item xs={12}>
             <FormControlLabel
               control={
-                <Checkbox
-                  checked={isActive}
-                  onChange={() => setIsActive(!isActive)}
+                <Switch 
+                  checked={formData.is_active} 
+                  onChange={handleChange}
+                  name="is_active"
+                  color="primary"
                 />
               }
-              label="Active"
+              label={formData.is_active ? "Rule Active" : "Rule Inactive"}
             />
+            <FormHelperText>
+              {formData.is_active 
+                ? "This rule is currently being enforced" 
+                : "This rule is saved but not enforced"}
+            </FormHelperText>
           </Grid>
 
-          <Grid item xs={12} textAlign="center">
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleSubmit}
-              disabled={loading}
-            >
-              {loading ? <CircularProgress size={24} /> : "Save Rule"}
-            </Button>
+          {/* Rule Preview */}
+          <Grid item xs={12}>
+            <Box sx={{ mt: 2, p: 2, bgcolor: 'background.paper', borderRadius: 1, border: '1px solid', borderColor: 'divider' }}>
+              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                Rule Preview:
+              </Typography>
+              <Typography variant="body2">
+                <strong>{formData.name}</strong>: {formData.action.toUpperCase()} {formData.protocol.toUpperCase()} traffic to {formData.dst_ip}:{formData.dst_port}
+                {formData.is_active ? " (Active)" : " (Inactive)"}
+              </Typography>
+            </Box>
+          </Grid>
+          
+          {/* Buttons */}
+          <Grid item xs={12}>
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3, gap: 2 }}>
+              <Button
+                variant="outlined"
+                color="secondary"
+                onClick={onCancel}
+                startIcon={<CancelIcon />}
+                disabled={loading}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleSubmit}
+                disabled={loading}
+                startIcon={loading ? <CircularProgress size={20} /> : <SaveIcon />}
+              >
+                {isEdit ? "Update Rule" : "Save Rule"}
+              </Button>
+            </Box>
           </Grid>
         </Grid>
-      </Paper>
-
-      {/* Divider for section */}
-      <Divider sx={{ margin: "20px 0" }} />
-
-      <Typography variant="h6" gutterBottom>
-        All Rules
-      </Typography>
-      {rulesList.length === 0 ? (
-        <Typography>No rules added yet</Typography>
-      ) : (
-        <List>
-          {rulesList.map((rule, index) => (
-            <ListItem
-              key={index}
-              secondaryAction={
-                <IconButton edge="end" onClick={() => handleDeleteRule(index)}>
-                  <DeleteIcon />
-                </IconButton>
-              }
-            >
-              <ListItemText
-                primary={rule.name || "Unnamed Rule"}
-                secondary={`${rule.protocol} - ${rule.dst_ip}:${rule.dst_port} (${rule.action})`}
-              />
-            </ListItem>
-          ))}
-        </List>
-      )}
-    </Box>
+      </CardContent>
+    </Card>
   );
 };
 

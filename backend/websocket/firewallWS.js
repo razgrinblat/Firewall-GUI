@@ -39,13 +39,6 @@ module.exports = function setupFirewallWebSocket(server) {
           console.log(data);
           updateConnections(data); // update TCP/UDP connections list
         }
-
-        // Handle firewall rule updates
-        else if (data.rules)
-        {
-          handleFirewallRules(data.rules); // forward rules to the firewall logic
-        }
-
       } catch (err) {
         console.error("Error parsing firewall data:", err);
       }
@@ -65,12 +58,18 @@ module.exports = function setupFirewallWebSocket(server) {
 /**
  * Handle incoming firewall rules and send them to the firewall logic
  */
-function handleFirewallRules(rules)
-{
-  // Forward the rules to the C++ firewall application
-  if (firewallConnection)
-  {
-    console.log("Received firewall rules:", rules);
-    firewallConnection.send(JSON.stringify({ type: "update rules", rules }));
+function handleFirewallRules(rules) {
+  // Remove the "name" property from each rule
+  const rulesWithoutName = rules.map(rule => {
+    const { name, ...rest } = rule; // Destructure the rule to exclude the "name" property
+    return rest; // Return the rest of the properties
+  });
+
+  // Forward the modified rules to the C++ firewall application
+  if (firewallConnection) {
+    console.log("Received firewall rules without 'name':", rulesWithoutName);
+    firewallConnection.send(JSON.stringify({ type: "update rules", rules: rulesWithoutName }));
   }
 }
+// Export the handleFirewallRules function so it can be used elsewhere
+module.exports.handleFirewallRules = handleFirewallRules;
