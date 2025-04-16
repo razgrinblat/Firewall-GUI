@@ -12,7 +12,7 @@ export function useClients() {
     };
 
     updateClients();
-    const interval = setInterval(updateClients, 1000);
+    const interval = setInterval(updateClients, 1500);
     return () => clearInterval(interval);
   }, []);
 

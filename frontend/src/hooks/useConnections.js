@@ -12,7 +12,7 @@ export function useConnections() {
     };
 
     updateConnections();
-    const interval = setInterval(updateConnections, 1000);
+    const interval = setInterval(updateConnections, 1500);
     return () => clearInterval(interval);
   }, []);
 

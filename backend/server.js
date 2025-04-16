@@ -2,6 +2,7 @@
 const express = require("express");
 const http = require("http");
 const firewallWS = require("./websocket/firewallWS");
+const conflictedRuleWS = require("./websocket/conflictedRuleWS");
 const statsRoutes = require("./routes/statsRoutes");
 const clientsRoutes = require("./routes/clientsRoutes");
 const connectionsRoutes = require("./routes/connectionsRoutes");
@@ -10,6 +11,7 @@ const cors = require("cors");
 
 const app = express();
 const PORT = process.env.PORT || 8080;
+const CONFLICTED_RULE_PORT = process.env.CONFLICTED_RULE_PORT || 3000;
 app.use(cors());
 
 // Middleware to parse JSON
@@ -21,12 +23,14 @@ app.use("/api", clientsRoutes);
 app.use("/api", connectionsRoutes);
 app.use("/api",rulesRoutes);
 
-// Create an HTTP server
-const server = http.createServer(app);
 
-// Setup the WebSocket server for the firewall on the same HTTP server
+const server = http.createServer(app);
 firewallWS(server); 
+
+const conflictedRuleServer = http.createServer();  
+conflictedRuleWS(conflictedRuleServer); 
 
 server.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
+conflictedRuleServer.listen(CONFLICTED_RULE_PORT);

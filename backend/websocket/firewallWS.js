@@ -1,6 +1,7 @@
 const WebSocket = require("ws");
 const { updateStats } = require("../controllers/statsController");
 const { updateConnections } = require("../controllers/connectionsController");
+const { sendConflictedRuleToFrontend } = require("./conflictedRuleWS");
 
 let firewallConnection = null;
 
@@ -36,8 +37,15 @@ module.exports = function setupFirewallWebSocket(server) {
         // Handle connections update (connections page update)
         else if (data.type === "connections update") {
           delete data.type;
-          console.log(data);
           updateConnections(data); // update TCP/UDP connections list
+        }
+        else if (data.type === "rule conflict")
+        {
+          delete data.type;
+          sendConflictedRuleToFrontend(data)
+        }
+        else{
+          
         }
       } catch (err) {
         console.error("Error parsing firewall data:", err);
@@ -58,17 +66,13 @@ module.exports = function setupFirewallWebSocket(server) {
 /**
  * Handle incoming firewall rules and send them to the firewall logic
  */
-function handleFirewallRules(rules) {
-  // Remove the "name" property from each rule
-  const rulesWithoutName = rules.map(rule => {
-    const { name, ...rest } = rule; // Destructure the rule to exclude the "name" property
-    return rest; // Return the rest of the properties
-  });
-
-  // Forward the modified rules to the C++ firewall application
-  if (firewallConnection) {
-    console.log("Received firewall rules without 'name':", rulesWithoutName);
-    firewallConnection.send(JSON.stringify({ type: "update rules", rules: rulesWithoutName }));
+function handleFirewallRules(rules) 
+{
+  // Forward the rules to the C++ firewall application
+  if (firewallConnection) 
+  {
+    console.log("Received firewall rules: ", rules);
+    firewallConnection.send(JSON.stringify({ type: "update rules", rules}));
   }
 }
 // Export the handleFirewallRules function so it can be used elsewhere
