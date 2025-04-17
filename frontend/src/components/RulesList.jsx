@@ -1,4 +1,3 @@
-// RulesList.jsx - Updated with DnD Kit for drag and drop functionality
 import React, { useState } from "react";
 import {
   Box,
@@ -27,6 +26,7 @@ import ToggleOffIcon from "@mui/icons-material/ToggleOff";
 import ToggleOnIcon from "@mui/icons-material/ToggleOn";
 import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
 import InfoIcon from "@mui/icons-material/Info";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import {
   DndContext,
   closestCenter,
@@ -138,11 +138,21 @@ const SortableRuleItem = ({ rule, index, onEdit, confirmDelete }) => {
                   color={getProtocolColor(rule.protocol)}
                   size="small"
                 />
-                <Chip 
-                  label={`${rule.dst_ip}:${rule.dst_port}`} 
-                  variant="outlined"
-                  size="small"
-                />
+                <Tooltip title="Source">
+                  <Chip 
+                    label={`From: ${rule.src_ip}:${rule.src_port}`} 
+                    variant="outlined"
+                    size="small"
+                  />
+                </Tooltip>
+                <ArrowForwardIcon sx={{ color: 'text.secondary', fontSize: 16 }} />
+                <Tooltip title="Destination">
+                  <Chip 
+                    label={`To: ${rule.dst_ip}:${rule.dst_port}`} 
+                    variant="outlined"
+                    size="small"
+                  />
+                </Tooltip>
                 <Chip 
                   label={rule.is_active ? "Active" : "Inactive"} 
                   color={rule.is_active ? "success" : "default"}
@@ -251,6 +261,8 @@ const RulesList = ({ rules, onEdit, onDelete, onReorder }) => {
     rule.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     rule.dst_ip.includes(searchTerm) ||
     rule.dst_port.toString().includes(searchTerm) ||
+    rule.src_ip.includes(searchTerm) ||
+    rule.src_port.toString().includes(searchTerm) ||
     rule.protocol.toLowerCase().includes(searchTerm.toLowerCase()) ||
     rule.action.toLowerCase().includes(searchTerm.toLowerCase())
   );

@@ -1,4 +1,3 @@
-//RuleForm
 import React, { useState, useEffect } from "react";
 import { 
   Button, 
@@ -27,6 +26,8 @@ const RuleForm = ({ onSave, loading, initialRule = null, onCancel }) => {
     name: "DNS Block",
     action: "block",
     protocol: "tcp",
+    src_ip: "*.*.*.*",
+    src_port: "*",
     dst_ip: "8.8.8.8",
     dst_port: "53",
     is_active: false
@@ -34,6 +35,8 @@ const RuleForm = ({ onSave, loading, initialRule = null, onCancel }) => {
 
   const [errors, setErrors] = useState({
     name: "",
+    src_ip: "",
+    src_port: "",
     dst_ip: "",
     dst_port: ""
   });
@@ -45,6 +48,8 @@ const RuleForm = ({ onSave, loading, initialRule = null, onCancel }) => {
         name: initialRule.name || "",
         action: initialRule.action || "block",
         protocol: initialRule.protocol || "tcp",
+        src_ip: initialRule.src_ip || "*.*.*.*",
+        src_port: initialRule.src_port || "*",
         dst_ip: initialRule.dst_ip || "",
         dst_port: initialRule.dst_port || "",
         is_active: Boolean(initialRule.is_active)
@@ -55,6 +60,8 @@ const RuleForm = ({ onSave, loading, initialRule = null, onCancel }) => {
         name: "DNS Block",
         action: "block",
         protocol: "tcp",
+        src_ip: "*.*.*.*",
+        src_port: "*",
         dst_ip: "8.8.8.8",
         dst_port: "53",
         is_active: false
@@ -63,13 +70,15 @@ const RuleForm = ({ onSave, loading, initialRule = null, onCancel }) => {
     // Reset errors when initialRule changes
     setErrors({
       name: "",
+      src_ip: "",
+      src_port: "",
       dst_ip: "",
       dst_port: ""
     });
   }, [initialRule]);
 
   const isValidIp = (ip) => {
-    // Allow specific IP or wildcard pattern (*.*.*.*)
+    // Allow wildcard pattern (*.*.*.*)
     if (ip === "*.*.*.*") return true;
     
     const regex = /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
@@ -77,6 +86,9 @@ const RuleForm = ({ onSave, loading, initialRule = null, onCancel }) => {
   };
 
   const isValidPort = (port) => {
+    // Allow wildcard "*" for "any port"
+    if (port === "*") return true;
+    
     const regex = /^[0-9]{1,5}$/;
     return regex.test(port) && parseInt(port) >= 1 && parseInt(port) <= 65535;
   };
@@ -84,8 +96,10 @@ const RuleForm = ({ onSave, loading, initialRule = null, onCancel }) => {
   const validateForm = () => {
     const newErrors = {
       name: !formData.name.trim() ? "Rule name is required" : "",
+      src_ip: !isValidIp(formData.src_ip) ? "Invalid IP address format" : "",
+      src_port: !isValidPort(formData.src_port) ? "Port must be between 1-65535 or *" : "",
       dst_ip: !isValidIp(formData.dst_ip) ? "Invalid IP address format" : "",
-      dst_port: !isValidPort(formData.dst_port) ? "Port must be between 1-65535" : ""
+      dst_port: !isValidPort(formData.dst_port) ? "Port must be between 1-65535 or *" : ""
     };
 
     setErrors(newErrors);
@@ -113,7 +127,8 @@ const RuleForm = ({ onSave, loading, initialRule = null, onCancel }) => {
       // Send the rule to the parent component
       onSave({
         ...formData,
-        dst_port: parseInt(formData.dst_port)
+        dst_port: formData.dst_port === "*" ? formData.dst_port : parseInt(formData.dst_port),
+        src_port: formData.src_port === "*" ? formData.src_port : parseInt(formData.src_port)
       });
     }
   };
@@ -186,6 +201,36 @@ const RuleForm = ({ onSave, loading, initialRule = null, onCancel }) => {
             </FormControl>
           </Grid>
           
+          {/* Source IP */}
+          <Grid item xs={12} md={6}>
+            <TextField
+              label="Source IP"
+              name="src_ip"
+              value={formData.src_ip}
+              onChange={handleChange}
+              fullWidth
+              required
+              error={Boolean(errors.src_ip)}
+              helperText={errors.src_ip || "IP address (e.g., 192.168.1.1 or *.*.*.*)"}
+              variant="outlined"
+            />
+          </Grid>
+          
+          {/* Source Port */}
+          <Grid item xs={12} md={6}>
+            <TextField
+              label="Source Port"
+              name="src_port"
+              value={formData.src_port}
+              onChange={handleChange}
+              fullWidth
+              required
+              error={Boolean(errors.src_port)}
+              helperText={errors.src_port || "Port number (1-65535 or * for any)"}
+              variant="outlined"
+            />
+          </Grid>
+          
           {/* Destination IP */}
           <Grid item xs={12} md={6}>
             <TextField
@@ -211,10 +256,8 @@ const RuleForm = ({ onSave, loading, initialRule = null, onCancel }) => {
               fullWidth
               required
               error={Boolean(errors.dst_port)}
-              helperText={errors.dst_port || "Port number (1-65535)"}
+              helperText={errors.dst_port || "Port number (1-65535 or * for any)"}
               variant="outlined"
-              type="number"
-              inputProps={{ min: 1, max: 65535 }}
             />
           </Grid>
           
@@ -245,7 +288,8 @@ const RuleForm = ({ onSave, loading, initialRule = null, onCancel }) => {
                 Rule Preview:
               </Typography>
               <Typography variant="body2">
-                <strong>{formData.name}</strong>: {formData.action.toUpperCase()} {formData.protocol.toUpperCase()} traffic to {formData.dst_ip}:{formData.dst_port}
+                <strong>{formData.name}</strong>: {formData.action.toUpperCase()} {formData.protocol.toUpperCase()} traffic 
+                from {formData.src_ip}:{formData.src_port} to {formData.dst_ip}:{formData.dst_port}
                 {formData.is_active ? " (Active)" : " (Inactive)"}
               </Typography>
             </Box>

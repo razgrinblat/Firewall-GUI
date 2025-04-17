@@ -1,4 +1,3 @@
-// RulesPage.jsx - Modified to use props for state management
 import React, { useState } from "react";
 import { 
   Container, 
@@ -83,8 +82,10 @@ const RulesPage = ({ rulesList, setRulesList }) => {
         return true;
       }
       
-      // Check for duplicate configuration (same dst_ip, dst_port, protocol and action)
+      // Check for duplicate configuration (same src_ip, src_port, dst_ip, dst_port, protocol and action)
       if (
+        existingRule.src_ip === rule.src_ip &&
+        existingRule.src_port === rule.src_port &&
         existingRule.dst_ip === rule.dst_ip &&
         existingRule.dst_port === rule.dst_port &&
         existingRule.protocol === rule.protocol &&
@@ -99,6 +100,10 @@ const RulesPage = ({ rulesList, setRulesList }) => {
   };
 
   const handleSaveRule = async (rule) => {
+    // Ensure source IP and port are present in the rule
+    if (!rule.src_ip) rule.src_ip = "*.*.*.*";
+    if (!rule.src_port) rule.src_port = "*";
+    
     // Check for duplicates when creating a new rule
     if (!selectedRule && isDuplicateRule(rule)) {
       return;
