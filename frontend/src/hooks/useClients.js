@@ -1,6 +1,6 @@
 // hooks/useClients.js
 import { useState, useEffect } from "react";
-import { fetchClients } from "../api/ClientsApi";
+import { fetchClients } from "../api/clientsApi";
 
 export function useClients() {
   const [clients, setClients] = useState([]);

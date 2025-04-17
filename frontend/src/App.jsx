@@ -1,4 +1,3 @@
-// src/App.jsx
 import React, { useMemo, useState, useEffect } from "react";
 import {
   createTheme,
@@ -20,11 +19,12 @@ import StatsPage from "./components/statsPage";
 import ConnectionsPage from "./components/ConnectionsPage";
 import ClientsPage from "./components/ClientsPage";
 import RulesPage from "./components/RulesPage";
+import PatTableComponent from "./components/PatTable";
 import ConflictedRuleComponent from "./components/ConflictedRule";
 
 function App() {
   const [mode, setMode] = useState("light");
-  const [page, setPage] = useState("stats"); // "stats", "connections", "clients", or "rules"
+  const [page, setPage] = useState("stats"); // "stats", "connections", "clients", "rules", or "pat"
   
   // Manage rulesList state in App component
   const [rulesList, setRulesList] = useState([]); 
@@ -122,6 +122,7 @@ function App() {
     if (page === "stats") return <StatsPage />;
     if (page === "connections") return <ConnectionsPage />;
     if (page === "clients") return <ClientsPage />;
+    if (page === "pat") return <PatTableComponent />;
     if (page === "rules") 
       return <RulesPage 
                rulesList={rulesList} 
@@ -148,6 +149,9 @@ function App() {
           </Button>
           <Button color="inherit" onClick={() => setPage("clients")}>
             Clients
+          </Button>
+          <Button color="inherit" onClick={() => setPage("pat")}>
+            PAT Table
           </Button>
           <Button color="inherit" onClick={() => setPage("rules")}>
             Manage Rules

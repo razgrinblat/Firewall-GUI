@@ -18,7 +18,7 @@ export function usePacketStats() {
 
     fetchStats();
 
-    const intervalId = setInterval(fetchStats, 1500); // poll every 1s
+    const intervalId = setInterval(fetchStats, 1500); // poll every 1.5s
 
     return () => clearInterval(intervalId);
   }, []);

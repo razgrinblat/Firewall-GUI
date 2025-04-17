@@ -1,6 +1,6 @@
 // hooks/useConnections.js
 import { useState, useEffect } from "react";
-import { fetchConnections } from "../api/ClientsApi";
+import { fetchConnections } from "../api/clientsApi";
 
 export function useConnections() {
   const [connections, setConnections] = useState({ tcp: [], udp: [] });

@@ -8,6 +8,7 @@ const statsRoutes = require("./routes/statsRoutes");
 const clientsRoutes = require("./routes/clientsRoutes");
 const connectionsRoutes = require("./routes/connectionsRoutes");
 const rulesRoutes = require("./routes/rulesRoutes");
+const patRoute = require("./routes/patRoutes");
 const connectDB = require("./config/db");
 const cors = require("cors");
 
@@ -22,7 +23,8 @@ app.use(express.json());
 app.use("/api", statsRoutes);
 app.use("/api", clientsRoutes);
 app.use("/api", connectionsRoutes);
-app.use("/api",rulesRoutes);
+app.use("/api", rulesRoutes);
+app.use("/api", patRoute);
 
 
 const server = http.createServer(app);
