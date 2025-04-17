@@ -42,8 +42,6 @@ function updateClientSessions(data) {
       // Recalculate average packet size
       client.avgPacketSize = parseFloat((client.totalSize / client.totalPackets).toFixed(2));
     }
-    
-    console.log(`Updated client ${ip}: TCP=${client.tcp}, UDP=${client.udp}, AvgSize=${client.avgPacketSize}`);
   }
 }
 

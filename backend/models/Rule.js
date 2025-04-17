@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
-const { handleFirewallRules } = require("../websocket/firewallWS");
+
+let cachedRules = []; // to hold rules for later firewall connection
 
 const RuleSchema = new mongoose.Schema({
   name: String,
@@ -12,24 +13,38 @@ const RuleSchema = new mongoose.Schema({
   is_active: Boolean
 });
 
-// Static method to load rules
-RuleSchema.statics.loadRulesOnStartup = async function() {
+// Static method to load and cache rules from DB
+RuleSchema.statics.loadRulesOnStartup = async function(handleFirewallRules) {
   try {
     console.log("Loading firewall rules from database...");
     const rules = await this.find();
-    
+
     if (rules && rules.length > 0) {
-      console.log(`Loaded ${rules.length} firewall rules`);
-      handleFirewallRules(rules);
+      const cleanRules = rules.map(rule => {
+        const { _id, __v, ...rest } = rule.toObject();
+        return rest;
+      });
+
+      cachedRules = cleanRules; // cache for future use
+      console.log(`Loaded and cached ${cleanRules.length} firewall rules`);
+
+      if (typeof handleFirewallRules === "function") {
+        handleFirewallRules(cleanRules); // send now if firewall is connected
+      }
     } else {
       console.log("No firewall rules found in database");
     }
-    
+
     return rules;
   } catch (err) {
     console.error("Error loading firewall rules:", err.message);
     return [];
   }
+};
+
+// Function to access cached rules
+RuleSchema.statics.getCachedRules = function() {
+  return cachedRules;
 };
 
 module.exports = mongoose.model("Rule", RuleSchema);

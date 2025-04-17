@@ -3,13 +3,11 @@ const { updateStats } = require("../controllers/statsController");
 const { updateConnections } = require("../controllers/connectionsController");
 const { sendConflictedRuleToFrontend } = require("./conflictedRuleWS");
 const { handleActivePortsMessage } = require("../controllers/patController");
+const Rule = require("../models/Rule");
 
 let firewallConnection = null;
 
-/**
- * Sets up the WebSocket server for firewall connections.
- */
-module.exports = function setupFirewallWebSocket(server) {
+function setupFirewallWebSocket(server) {
   const firewallWSS = new WebSocket.Server({
     server: server,
     path: "/firewall",
@@ -25,34 +23,39 @@ module.exports = function setupFirewallWebSocket(server) {
     firewallConnection = ws;
     console.log("Firewall connected.");
 
+    const cached = Rule.getCachedRules();
+    if (cached.length > 0) {
+      console.log("Sending cached firewall rules to newly connected firewall...");
+      ws.send(JSON.stringify({ type: "update rules", rules: cached }));
+    }
+
     ws.on("message", (raw) => {
       try {
         const data = JSON.parse(raw);
 
-        // Handle packet stats (stats page update)
-        if (data.type === "packet stats") {
+        if (data.type === "packet stats")
+        {
           delete data.type;
-          updateStats(data); // update stats using the controller
-        }
-        // Handle connections update (connections page update)
-        else if (data.type === "connections update") {
+          updateStats(data);
+        } 
+        else if (data.type === "connections update")
+        {
           delete data.type;
-          updateConnections(data); // update TCP/UDP connections list
-        }
-        // Handle rule conflict message from Firewall
+          updateConnections(data);
+        } 
         else if (data.type === "rule conflict")
         {
           delete data.type;
-          sendConflictedRuleToFrontend(data)
-        }
-        // Handle PAT table message from firewall
-        else if (data.type === "active ports") 
+          sendConflictedRuleToFrontend(data);
+        } 
+        else if (data.type === "active ports")
         {
           delete data.type;
-          handleActivePortsMessage(data);
-        }
-        else{
-          console.log("unknown message from firewall: " + data)
+          console.log(data);
+          handleActivePortsMessage(data.data);
+        } 
+        else {
+          console.log("Unknown message from firewall:", data);
         }
       } catch (err) {
         console.error("Error parsing firewall data:", err);
@@ -68,7 +71,7 @@ module.exports = function setupFirewallWebSocket(server) {
       console.error("Firewall WS error:", err);
     });
   });
-};
+}
 
 /**
  * Handle incoming firewall rules and send them to the firewall logic
@@ -83,4 +86,5 @@ function handleFirewallRules(rules)
   }
 }
 
+module.exports = setupFirewallWebSocket;
 module.exports.handleFirewallRules = handleFirewallRules;

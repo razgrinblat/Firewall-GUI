@@ -2,7 +2,6 @@ let activePorts = [];
 
 function handleActivePortsMessage(data) {
   if (!Array.isArray(data)) {
-    console.warn("Expected array of port mappings, got:", data);
     return;
   }
 
@@ -11,8 +10,6 @@ function handleActivePortsMessage(data) {
     client_port: entry.client_port,
     firewall_port: entry.firewall_port
   }));
-  
-  console.log("Updated PAT table:", activePorts);
 }
 
 function getActivePorts() {

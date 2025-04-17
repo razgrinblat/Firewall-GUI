@@ -26,18 +26,19 @@ app.use("/api", connectionsRoutes);
 app.use("/api", rulesRoutes);
 app.use("/api", patRoute);
 
-
 const server = http.createServer(app);
-firewallWS(server); 
 
 const conflictedRuleServer = http.createServer();  
 conflictedRuleWS(conflictedRuleServer); 
 
 server.listen(PORT,  async () => {
   await connectDB();
-  console.log(`Server running on http://localhost:${PORT}`);
+  
   // Load rules from MongoDB and apply them
   const Rule = require("./models/Rule");
   await Rule.loadRulesOnStartup();
+  
+  firewallWS(server); 
+  console.log(`Server running on http://localhost:${PORT}`);
 });
 conflictedRuleServer.listen(CONFLICTED_RULE_PORT);
