@@ -1,3 +1,4 @@
+// RulesPage
 import React, { useState } from "react";
 import { 
   Container, 
@@ -194,20 +195,6 @@ const RulesPage = ({ rulesList, setRulesList }) => {
     }
   };
 
-  const handleReorderRules = async (newOrderedRules) => {
-    try {
-      // Update the state in App component
-      setRulesList(newOrderedRules);
-      
-      // Send the reordered rules to the server
-      await sendRulesToServer(newOrderedRules);
-      showNotification("Rule order updated successfully");
-    } catch (error) {
-      console.error("Error:", error);
-      showNotification("Failed to update rule order", "error");
-    }
-  };
-
   return (
     <Container maxWidth="lg">
       <Paper elevation={3} sx={{ mt: 3, mb: 3, overflow: 'hidden' }}>
@@ -245,7 +232,6 @@ const RulesPage = ({ rulesList, setRulesList }) => {
             rules={rulesList}
             onEdit={(rule, index) => handleEditRule(rule, index)}
             onDelete={handleDeleteRule}
-            onReorder={handleReorderRules}
           />
         </TabPanel>
       </Paper>

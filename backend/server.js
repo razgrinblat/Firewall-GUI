@@ -10,6 +10,7 @@ const connectionsRoutes = require("./routes/connectionsRoutes");
 const rulesRoutes = require("./routes/rulesRoutes");
 const patRoute = require("./routes/patRoutes");
 const connectDB = require("./config/db");
+const Rule = require("./models/Rule");
 const cors = require("cors");
 
 const app = express();
@@ -35,7 +36,6 @@ server.listen(PORT,  async () => {
   await connectDB();
   
   // Load rules from MongoDB and apply them
-  const Rule = require("./models/Rule");
   await Rule.loadRulesOnStartup();
   
   firewallWS(server); 

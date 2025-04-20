@@ -1,3 +1,4 @@
+// RuleList
 import React, { useState } from "react";
 import {
   Box,
@@ -24,41 +25,10 @@ import BlockIcon from "@mui/icons-material/Block";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ToggleOffIcon from "@mui/icons-material/ToggleOff";
 import ToggleOnIcon from "@mui/icons-material/ToggleOn";
-import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
 import InfoIcon from "@mui/icons-material/Info";
-import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from "@dnd-kit/core";
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-  useSortable,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 
-// SortableItem component
-const SortableRuleItem = ({ rule, index, onEdit, confirmDelete }) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-  } = useSortable({ id: `rule-${index}` });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-
+// Rule Item component 
+const RuleItem = ({ rule, index, onEdit, confirmDelete }) => {
   const getActionColor = (action) => {
     switch (action.toLowerCase()) {
       case 'block':
@@ -82,7 +52,7 @@ const SortableRuleItem = ({ rule, index, onEdit, confirmDelete }) => {
   };
 
   return (
-    <Grid item xs={12} ref={setNodeRef} style={style}>
+    <Grid item xs={12}>
       <Paper 
         elevation={2} 
         sx={{ 
@@ -100,31 +70,11 @@ const SortableRuleItem = ({ rule, index, onEdit, confirmDelete }) => {
       >
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Box
-              {...attributes}
-              {...listeners}
-              sx={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                mr: 1, 
-                cursor: 'grab',
-                color: 'text.secondary'
-              }}
-            >
-              <DragIndicatorIcon />
-            </Box>
             <Box>
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 <Typography variant="h6" component="div">
                   {rule.name}
                 </Typography>
-                <Chip 
-                  label={`Priority: ${index + 1}`} 
-                  size="small" 
-                  sx={{ ml: 1 }} 
-                  color="default"
-                  variant="outlined"
-                />
               </Box>
               <Box sx={{ display: 'flex', gap: 1, mt: 1, mb: 2, flexWrap: 'wrap' }}>
                 <Chip 
@@ -145,7 +95,6 @@ const SortableRuleItem = ({ rule, index, onEdit, confirmDelete }) => {
                     size="small"
                   />
                 </Tooltip>
-                <ArrowForwardIcon sx={{ color: 'text.secondary', fontSize: 16 }} />
                 <Tooltip title="Destination">
                   <Chip 
                     label={`To: ${rule.dst_ip}:${rule.dst_port}`} 
@@ -189,7 +138,7 @@ const SortableRuleItem = ({ rule, index, onEdit, confirmDelete }) => {
   );
 };
 
-const RulesList = ({ rules, onEdit, onDelete, onReorder }) => {
+const RulesList = ({ rules, onEdit, onDelete }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [deleteConfirmation, setDeleteConfirmation] = useState({
     open: false,
@@ -199,14 +148,6 @@ const RulesList = ({ rules, onEdit, onDelete, onReorder }) => {
   const [infoDialog, setInfoDialog] = useState({
     open: false
   });
-
-  // Set up sensors for drag detection
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
 
   const handleSearchChange = (event) => {
     setSearchTerm(event.target.value);
@@ -235,18 +176,6 @@ const RulesList = ({ rules, onEdit, onDelete, onReorder }) => {
       ruleIndex: null,
       ruleName: ""
     });
-  };
-
-  const handleDragEnd = (event) => {
-    const { active, over } = event;
-    
-    if (over && active.id !== over.id) {
-      const oldIndex = parseInt(active.id.split('-')[1]);
-      const newIndex = parseInt(over.id.split('-')[1]);
-      
-      const newRules = arrayMove(rules, oldIndex, newIndex);
-      onReorder(newRules);
-    }
   };
 
   const showInfoDialog = () => {
@@ -286,7 +215,7 @@ const RulesList = ({ rules, onEdit, onDelete, onReorder }) => {
           }}
         />
         <Box sx={{ display: 'flex', gap: 2 }}>
-          <Tooltip title="Rule Order Information">
+          <Tooltip title="Rule Information">
             <IconButton 
               color="info" 
               onClick={showInfoDialog}
@@ -306,10 +235,10 @@ const RulesList = ({ rules, onEdit, onDelete, onReorder }) => {
         </Box>
       </Box>
 
-      {/* Rule Order Information */}
+      {/* Rule Tree Information */}
       <Box sx={{ mb: 3, p: 2, bgcolor: 'info.light', color: 'info.contrastText', borderRadius: 1 }}>
         <Typography variant="body2">
-          <strong>Note:</strong> Rule order matters! Rules are processed from top to bottom. Drag and drop rules to change their priority.
+          <strong>Note:</strong> Rules are processed using a rule tree structure that automatically resolves conflicts.
         </Typography>
       </Box>
 
@@ -325,28 +254,17 @@ const RulesList = ({ rules, onEdit, onDelete, onReorder }) => {
           </Typography>
         </Box>
       ) : (
-        <DndContext 
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext
-            items={filteredRules.map((_, index) => `rule-${index}`)}
-            strategy={verticalListSortingStrategy}
-          >
-            <Grid container spacing={2}>
-              {filteredRules.map((rule, index) => (
-                <SortableRuleItem 
-                  key={`rule-${index}`}
-                  rule={rule}
-                  index={index}
-                  onEdit={onEdit}
-                  confirmDelete={confirmDelete}
-                />
-              ))}
-            </Grid>
-          </SortableContext>
-        </DndContext>
+        <Grid container spacing={2}>
+          {filteredRules.map((rule, index) => (
+            <RuleItem 
+              key={`rule-${index}`}
+              rule={rule}
+              index={index}
+              onEdit={onEdit}
+              confirmDelete={confirmDelete}
+            />
+          ))}
+        </Grid>
       )}
 
       {/* Delete Confirmation Dialog */}
@@ -372,29 +290,29 @@ const RulesList = ({ rules, onEdit, onDelete, onReorder }) => {
         </DialogActions>
       </Dialog>
 
-      {/* Info Dialog */}
+      {/* Info Dialog - Updated for rule tree explanation */}
       <Dialog
         open={infoDialog.open}
         onClose={closeInfoDialog}
         aria-labelledby="info-dialog-title"
       >
         <DialogTitle id="info-dialog-title">
-          Rule Priority Information
+          Rule Tree Information
         </DialogTitle>
         <DialogContent>
           <DialogContentText>
             <Typography paragraph>
-              <strong>Rule Order is Critical:</strong> Firewall rules are processed from top to bottom. When traffic matches a rule, the rule's action is applied and no further rules are checked.
+              <strong>Rule Tree Structure:</strong> This firewall uses a rule tree structure to process rules, which automatically resolves potential conflicts between rules.
             </Typography>
             <Typography paragraph>
-              <strong>How to Change Priority:</strong> Drag and drop rules in the list to change their order. Higher rules (at the top) have higher priority.
+              <strong>Rule Processing:</strong> The system intelligently evaluates rules in the tree, ensuring that all applicable rules are considered before making a decision.
             </Typography>
             <Typography>
-              <strong>Best Practices:</strong>
+              <strong>Notes:</strong>
               <ul>
-                <li>Place more specific rules before general rules</li>
-                <li>Critical blocking rules should be near the top</li>
-                <li>General "accept" rules should be lower in the order</li>
+                <li>No need to worry about rule ordering or conflicts</li>
+                <li>Rules with similar conditions are grouped automatically</li>
+                <li>The system guarantees consistent behavior regardless of rule order</li>
               </ul>
             </Typography>
           </DialogContentText>

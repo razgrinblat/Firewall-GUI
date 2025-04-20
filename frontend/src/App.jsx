@@ -20,7 +20,6 @@ import ConnectionsPage from "./components/ConnectionsPage";
 import ClientsPage from "./components/ClientsPage";
 import RulesPage from "./components/RulesPage";
 import PatTableComponent from "./components/PatTable";
-import ConflictedRuleComponent from "./components/ConflictedRule";
 
 function App() {
   const [mode, setMode] = useState("light");
@@ -176,7 +175,6 @@ function App() {
           {error}
         </Alert>
       </Snackbar>
-      <ConflictedRuleComponent />
     </ThemeProvider>
   );
 }
