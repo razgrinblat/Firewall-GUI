@@ -3,7 +3,7 @@ require("dotenv").config();
 const express = require("express");
 const http = require("http");
 const firewallWS = require("./websocket/firewallWS");
-const conflictedRuleWS = require("./websocket/conflictedRuleWS");
+const FirewallMsgWS = require("./websocket/FirewallMsgWS");
 const statsRoutes = require("./routes/statsRoutes");
 const clientsRoutes = require("./routes/clientsRoutes");
 const connectionsRoutes = require("./routes/connectionsRoutes");
@@ -15,7 +15,7 @@ const cors = require("cors");
 
 const app = express();
 const PORT = process.env.PORT;
-const CONFLICTED_RULE_PORT = process.env.CONFLICTED_RULE_PORT;
+const FIREWALL_INFO_PORT = process.env.FIREWALL_INFO_PORT;
 app.use(cors());
 // Middleware to parse JSON
 app.use(express.json());
@@ -29,8 +29,8 @@ app.use("/api", patRoute);
 
 const server = http.createServer(app);
 
-const conflictedRuleServer = http.createServer();  
-conflictedRuleWS(conflictedRuleServer); 
+const FirewallMsgServer = http.createServer();  
+FirewallMsgWS(FirewallMsgServer); 
 
 server.listen(PORT,  async () => {
   await connectDB();
@@ -41,4 +41,4 @@ server.listen(PORT,  async () => {
   firewallWS(server); 
   console.log(`Server running on http://localhost:${PORT}`);
 });
-conflictedRuleServer.listen(CONFLICTED_RULE_PORT);
+FirewallMsgServer.listen(FIREWALL_INFO_PORT);

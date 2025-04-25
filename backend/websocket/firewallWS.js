@@ -1,7 +1,8 @@
+//firewallWS.js
 const WebSocket = require("ws");
 const { updateStats } = require("../controllers/statsController");
 const { updateConnections } = require("../controllers/connectionsController");
-const { sendConflictedRuleToFrontend } = require("./conflictedRuleWS");
+const {sendBlockMsgToFrontend, sendInfoMsgToFrontend} = require("./FirewallMsgWS");
 const { handleActivePortsMessage } = require("../controllers/patController");
 const Rule = require("../models/Rule");
 
@@ -43,16 +44,18 @@ function setupFirewallWebSocket(server) {
           delete data.type;
           updateConnections(data);
         } 
-        else if (data.type === "rule conflict")
-        {
-          delete data.type;
-          sendConflictedRuleToFrontend(data);
-        } 
         else if (data.type === "active ports")
         {
           delete data.type;
-          console.log(data);
           handleActivePortsMessage(data.data);
+        }
+        else if (data.type === "firewall info")
+        {
+          sendInfoMsgToFrontend(data.data);
+        }
+        else if (data.type === "firewall block")
+        {
+          sendBlockMsgToFrontend(data.data);
         } 
         else {
           console.log("Unknown message from firewall:", data);
