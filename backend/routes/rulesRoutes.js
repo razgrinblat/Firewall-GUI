@@ -8,8 +8,6 @@ router.post("/rules", async (req, res) => {
   try {
     const rules = req.body.rules;
     
-    console.log("Received rules from frontend:", JSON.stringify(rules, null, 2));
-    
     if (!rules || !Array.isArray(rules)) {
       return res.status(400).json({ message: "Invalid rules data" });
     }

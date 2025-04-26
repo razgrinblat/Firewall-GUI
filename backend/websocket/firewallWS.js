@@ -5,6 +5,8 @@ const { updateConnections } = require("../controllers/connectionsController");
 const {sendBlockMsgToFrontend, sendInfoMsgToFrontend} = require("./FirewallMsgWS");
 const { handleActivePortsMessage } = require("../controllers/patController");
 const Rule = require("../models/Rule");
+const HttpRule = require("../models/HttpRule");
+const FtpRule = require("../models/FtpRule");
 
 let firewallConnection = null;
 
@@ -23,11 +25,27 @@ function setupFirewallWebSocket(server) {
 
     firewallConnection = ws;
     console.log("Firewall connected.");
-
+    
+     // Send cached  IP rules
     const cached = Rule.getCachedRules();
-    if (cached.length > 0) {
+    if (cached.length > 0)
+    {
       console.log("Sending cached firewall rules to newly connected firewall...");
       ws.send(JSON.stringify({ type: "update rules", rules: cached }));
+    }
+
+    // Send cached HTTP DPI rules
+    const cachedHttpRules = HttpRule.getCachedRules();
+    if (cachedHttpRules)
+    {
+      handleHttpDpiRules(cachedHttpRules);
+    }
+
+    // Send cached FTP rules
+    const cachedFtpRules = FtpRule.getCachedRules();
+    if (cachedFtpRules)
+    {
+      handleFtpDpiRules(cachedFtpRules);
     }
 
     ws.on("message", (raw) => {
@@ -81,13 +99,33 @@ function setupFirewallWebSocket(server) {
  */
 function handleFirewallRules(rules) 
 {
-  // Forward the rules to the C++ firewall application
+  // Forward the rules to the firewall application
   if (firewallConnection) 
   {
     console.log("Received firewall rules: ", rules);
-    firewallConnection.send(JSON.stringify({ type: "update rules", rules}));
+    firewallConnection.send(JSON.stringify({ type: "update rules", rules :rules}));
+  }
+}
+
+function handleHttpDpiRules(rules)
+{
+  if (firewallConnection)
+  {
+    console.log("Received firewall http Dpi rules: ", rules)
+    firewallConnection.send(JSON.stringify({type: "update rules", http_rules : rules}))
+  }
+}
+
+function handleFtpDpiRules(rules)
+{
+  if (firewallConnection)
+  {
+    console.log("Received firewall FTP Dpi rules: ", rules)
+    firewallConnection.send(JSON.stringify({type: "update rules", ftp_rules: rules}))
   }
 }
 
 module.exports = setupFirewallWebSocket;
 module.exports.handleFirewallRules = handleFirewallRules;
+module.exports.handleHttpDpiRules = handleHttpDpiRules;
+module.exports.handleFtpDpiRules = handleFtpDpiRules;

@@ -12,14 +12,12 @@ module.exports = function setupInfoMessageWebSocket(server) {
 
   InfoMessageWS.on("connection", (ws) => {
     FirewallMsgWSConnection = ws;
-    console.log("Firewall Messages WebSocket connected.");
 
     // Handle messages coming to this WebSocket
     ws.on("message", (raw) => {
     });
 
     ws.on("close", () => {
-      console.log("Firewall Messages WebSocket disconnected.");
       FirewallMsgWSConnection = null;
     });
 

@@ -9,8 +9,12 @@ const clientsRoutes = require("./routes/clientsRoutes");
 const connectionsRoutes = require("./routes/connectionsRoutes");
 const rulesRoutes = require("./routes/rulesRoutes");
 const patRoute = require("./routes/patRoutes");
+const httpRulesRoutes = require("./routes/httpRules");
+const ftpRulesRoutes = require("./routes/ftpRules");
 const connectDB = require("./config/db");
 const Rule = require("./models/Rule");
+const FtpRule = require("./models/FtpRule");
+const HttpRule = require("./models/HttpRule");
 const cors = require("cors");
 
 const app = express();
@@ -26,6 +30,8 @@ app.use("/api", clientsRoutes);
 app.use("/api", connectionsRoutes);
 app.use("/api", rulesRoutes);
 app.use("/api", patRoute);
+app.use("/api", httpRulesRoutes);
+app.use("/api", ftpRulesRoutes);
 
 const server = http.createServer(app);
 
@@ -35,8 +41,14 @@ FirewallMsgWS(FirewallMsgServer);
 server.listen(PORT,  async () => {
   await connectDB();
   
-  // Load rules from MongoDB and apply them
+  // Load rules from MongoDB
   await Rule.loadRulesOnStartup();
+
+  // Load HTTP DPI rules from MongoDB
+  await HttpRule.loadRulesOnStartup();
+  
+  // Load FTP rules from MongoDB
+  await FtpRule.loadRulesOnStartup();
   
   firewallWS(server); 
   console.log(`Server running on http://localhost:${PORT}`);

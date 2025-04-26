@@ -31,6 +31,7 @@ import ConnectionsPage from "./components/ConnectionsPage";
 import ClientsPage from "./components/ClientsPage";
 import RulesPage from "./components/RulesPage";
 import PatTableComponent from "./components/PatTable";
+import DpiRulePage from "./components/DpiRulePage";
 
 const drawerWidth = 240;
 
@@ -42,7 +43,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Fetch rules when app loads (and on navigating to “rules” if not yet loaded)
+  // initial fetch for generic rules
   useEffect(() => {
     const fetchRules = async () => {
       if (!rulesLoaded) {
@@ -52,14 +53,13 @@ function App() {
           if (!res.ok) throw new Error(`Failed to fetch rules: ${res.status}`);
           const data = await res.json();
           if (data.rules) setRulesList(data.rules);
-          setRulesLoaded(true);
         } catch (err) {
           console.error(err);
           setError(
             "Could not load existing firewall rules. You can still create new rules."
           );
-          setRulesLoaded(true);
         } finally {
+          setRulesLoaded(true);
           setLoading(false);
         }
       }
@@ -67,6 +67,7 @@ function App() {
     fetchRules();
   }, [rulesLoaded]);
 
+  // re-fetch when user navigates to “rules”
   useEffect(() => {
     if (page === "rules" && !rulesLoaded && !loading) {
       setLoading(true);
@@ -77,24 +78,22 @@ function App() {
         })
         .then((data) => {
           if (data.rules) setRulesList(data.rules);
-          setRulesLoaded(true);
         })
         .catch((err) => {
           console.error(err);
           setError(
             "Could not load existing firewall rules. You can still create new rules."
           );
-          setRulesLoaded(true);
         })
-        .finally(() => setLoading(false));
+        .finally(() => {
+          setRulesLoaded(true);
+          setLoading(false);
+        });
     }
   }, [page, rulesLoaded, loading]);
 
   const handleCloseError = () => setError(null);
-
-  const toggleTheme = () =>
-    setMode((prev) => (prev === "light" ? "dark" : "light"));
-
+  const toggleTheme = () => setMode((prev) => (prev === "light" ? "dark" : "light"));
   const handlePageChange = (newPage) => setPage(newPage);
 
   const theme = useMemo(
@@ -109,6 +108,7 @@ function App() {
   );
 
   const renderPage = () => {
+    // loading spinner for generic rules page
     if (page === "rules" && loading) {
       return (
         <Box
@@ -123,6 +123,7 @@ function App() {
         </Box>
       );
     }
+
     switch (page) {
       case "stats":
         return <StatsPage />;
@@ -140,6 +141,8 @@ function App() {
             onRulesInitialized={() => setRulesLoaded(true)}
           />
         );
+      case "dpi":
+        return <DpiRulePage />; 
       default:
         return <div>Page not found</div>;
     }
@@ -151,63 +154,8 @@ function App() {
     { id: "clients", text: "Clients", icon: <DevicesIcon /> },
     { id: "pat", text: "PAT Table", icon: <SwapHorizIcon /> },
     { id: "rules", text: "Manage Rules", icon: <SecurityIcon /> },
+    { id: "dpi", text: "DPI Rules", icon: <NetworkCheckIcon /> },
   ];
-
-  const drawer = (
-    <>
-      <Toolbar>
-        <Typography variant="h6" noWrap>
-          Firewall Dashboard
-        </Typography>
-      </Toolbar>
-      <List>
-        {navigationItems.map((item) => (
-          <ListItem key={item.id} disablePadding>
-            <ListItemButton
-              selected={page === item.id}
-              onClick={() => handlePageChange(item.id)}
-              sx={{
-                "&.Mui-selected": {
-                  backgroundColor:
-                    theme.palette.mode === "dark"
-                      ? "rgba(25, 118, 210, 0.2)"
-                      : "rgba(25, 118, 210, 0.1)",
-                  borderLeft: `4px solid ${theme.palette.primary.main}`,
-                  "&:hover": {
-                    backgroundColor:
-                      theme.palette.mode === "dark"
-                        ? "rgba(25, 118, 210, 0.3)"
-                        : "rgba(25, 118, 210, 0.2)",
-                  },
-                },
-                "&:hover": {
-                  backgroundColor:
-                    theme.palette.mode === "dark"
-                      ? "rgba(255, 255, 255, 0.05)"
-                      : "rgba(0, 0, 0, 0.04)",
-                },
-              }}
-            >
-              <ListItemIcon
-                sx={{
-                  color:
-                    page === item.id ? theme.palette.primary.main : "inherit",
-                }}
-              >
-                {item.icon}
-              </ListItemIcon>
-              <ListItemText
-                primary={item.text}
-                primaryTypographyProps={{
-                  fontWeight: page === item.id ? "bold" : "normal",
-                }}
-              />
-            </ListItemButton>
-          </ListItem>
-        ))}
-      </List>
-    </>
-  );
 
   return (
     <ThemeProvider theme={theme}>
@@ -222,16 +170,11 @@ function App() {
               SecurePipe
             </Typography>
             <IconButton color="inherit" onClick={toggleTheme}>
-              {mode === "light" ? (
-                <Brightness4Icon />
-              ) : (
-                <Brightness7Icon />
-              )}
+              {mode === "light" ? <Brightness4Icon /> : <Brightness7Icon />}
             </IconButton>
           </Toolbar>
         </AppBar>
 
-        {/* Permanent drawer only */}
         <Drawer
           variant="permanent"
           sx={{
@@ -249,7 +192,52 @@ function App() {
           }}
         >
           <Toolbar />
-          {drawer}
+          <List>
+            {navigationItems.map((item) => (
+              <ListItem key={item.id} disablePadding>
+                <ListItemButton
+                  selected={page === item.id}
+                  onClick={() => handlePageChange(item.id)}
+                  sx={{
+                    "&.Mui-selected": {
+                      backgroundColor:
+                        theme.palette.mode === "dark"
+                          ? "rgba(25, 118, 210, 0.2)"
+                          : "rgba(25, 118, 210, 0.1)",
+                      borderLeft: `4px solid ${theme.palette.primary.main}`,
+                      "&:hover": {
+                        backgroundColor:
+                          theme.palette.mode === "dark"
+                            ? "rgba(25, 118, 210, 0.3)"
+                            : "rgba(25, 118, 210, 0.2)",
+                      },
+                    },
+                    "&:hover": {
+                      backgroundColor:
+                        theme.palette.mode === "dark"
+                          ? "rgba(255, 255, 255, 0.05)"
+                          : "rgba(0, 0, 0, 0.04)",
+                    },
+                  }}
+                >
+                  <ListItemIcon
+                    sx={{
+                      color:
+                        page === item.id ? theme.palette.primary.main : "inherit",
+                    }}
+                  >
+                    {item.icon}
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={item.text}
+                    primaryTypographyProps={{
+                      fontWeight: page === item.id ? "bold" : "normal",
+                    }}
+                  />
+                </ListItemButton>
+              </ListItem>
+            ))}
+          </List>
         </Drawer>
 
         <Box
