@@ -18,7 +18,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import WifiIcon from "@mui/icons-material/Wifi";
 import WifiOffIcon from "@mui/icons-material/WifiOff";
 import { usePacketStats } from "../hooks/usePacketStats";
-import useFirewallMessages from "../hooks/useFirewallMessages";
+import { useFirewallMessages } from "../contexts/FirewallMessageContext";
 import StatsPieChart from "./statsPieChart";
 
 // TabPanel component to support tab switching

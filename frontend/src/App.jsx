@@ -26,7 +26,10 @@ import DevicesIcon from "@mui/icons-material/Devices";
 import SecurityIcon from "@mui/icons-material/Security";
 import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
 
-import StatsPage from "./components/statsPage";
+// Import the FirewallMessageProvider
+import { FirewallMessageProvider } from "./contexts/FirewallMessageContext";
+
+import StatsPage from "./components/StatsPage";
 import ConnectionsPage from "./components/ConnectionsPage";
 import ClientsPage from "./components/ClientsPage";
 import RulesPage from "./components/RulesPage";
@@ -67,7 +70,7 @@ function App() {
     fetchRules();
   }, [rulesLoaded]);
 
-  // re-fetch when user navigates to “rules”
+  // re-fetch when user navigates to "rules"
   useEffect(() => {
     if (page === "rules" && !rulesLoaded && !loading) {
       setLoading(true);
@@ -158,116 +161,118 @@ function App() {
   ];
 
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Box sx={{ display: "flex" }}>
-        <AppBar
-          position="fixed"
-          sx={{ zIndex: (t) => t.zIndex.drawer + 1, boxShadow: 2 }}
-        >
-          <Toolbar>
-            <Typography variant="h6" sx={{ flexGrow: 1 }}>
-              SecurePipe
-            </Typography>
-            <IconButton color="inherit" onClick={toggleTheme}>
-              {mode === "light" ? <Brightness4Icon /> : <Brightness7Icon />}
-            </IconButton>
-          </Toolbar>
-        </AppBar>
+    <FirewallMessageProvider>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <Box sx={{ display: "flex" }}>
+          <AppBar
+            position="fixed"
+            sx={{ zIndex: (t) => t.zIndex.drawer + 1, boxShadow: 2 }}
+          >
+            <Toolbar>
+              <Typography variant="h6" sx={{ flexGrow: 1 }}>
+                SecurePipe
+              </Typography>
+              <IconButton color="inherit" onClick={toggleTheme}>
+                {mode === "light" ? <Brightness4Icon /> : <Brightness7Icon />}
+              </IconButton>
+            </Toolbar>
+          </AppBar>
 
-        <Drawer
-          variant="permanent"
-          sx={{
-            width: drawerWidth,
-            flexShrink: 0,
-            "& .MuiDrawer-paper": {
+          <Drawer
+            variant="permanent"
+            sx={{
               width: drawerWidth,
-              boxSizing: "border-box",
-              boxShadow: 2,
-              backgroundColor:
-                theme.palette.mode === "dark"
-                  ? theme.palette.background.default
-                  : "#ffffff",
-            },
-          }}
-        >
-          <Toolbar />
-          <List>
-            {navigationItems.map((item) => (
-              <ListItem key={item.id} disablePadding>
-                <ListItemButton
-                  selected={page === item.id}
-                  onClick={() => handlePageChange(item.id)}
-                  sx={{
-                    "&.Mui-selected": {
-                      backgroundColor:
-                        theme.palette.mode === "dark"
-                          ? "rgba(25, 118, 210, 0.2)"
-                          : "rgba(25, 118, 210, 0.1)",
-                      borderLeft: `4px solid ${theme.palette.primary.main}`,
+              flexShrink: 0,
+              "& .MuiDrawer-paper": {
+                width: drawerWidth,
+                boxSizing: "border-box",
+                boxShadow: 2,
+                backgroundColor:
+                  theme.palette.mode === "dark"
+                    ? theme.palette.background.default
+                    : "#ffffff",
+              },
+            }}
+          >
+            <Toolbar />
+            <List>
+              {navigationItems.map((item) => (
+                <ListItem key={item.id} disablePadding>
+                  <ListItemButton
+                    selected={page === item.id}
+                    onClick={() => handlePageChange(item.id)}
+                    sx={{
+                      "&.Mui-selected": {
+                        backgroundColor:
+                          theme.palette.mode === "dark"
+                            ? "rgba(25, 118, 210, 0.2)"
+                            : "rgba(25, 118, 210, 0.1)",
+                        borderLeft: `4px solid ${theme.palette.primary.main}`,
+                        "&:hover": {
+                          backgroundColor:
+                            theme.palette.mode === "dark"
+                              ? "rgba(25, 118, 210, 0.3)"
+                              : "rgba(25, 118, 210, 0.2)",
+                        },
+                      },
                       "&:hover": {
                         backgroundColor:
                           theme.palette.mode === "dark"
-                            ? "rgba(25, 118, 210, 0.3)"
-                            : "rgba(25, 118, 210, 0.2)",
+                            ? "rgba(255, 255, 255, 0.05)"
+                            : "rgba(0, 0, 0, 0.04)",
                       },
-                    },
-                    "&:hover": {
-                      backgroundColor:
-                        theme.palette.mode === "dark"
-                          ? "rgba(255, 255, 255, 0.05)"
-                          : "rgba(0, 0, 0, 0.04)",
-                    },
-                  }}
-                >
-                  <ListItemIcon
-                    sx={{
-                      color:
-                        page === item.id ? theme.palette.primary.main : "inherit",
                     }}
                   >
-                    {item.icon}
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={item.text}
-                    primaryTypographyProps={{
-                      fontWeight: page === item.id ? "bold" : "normal",
-                    }}
-                  />
-                </ListItemButton>
-              </ListItem>
-            ))}
-          </List>
-        </Drawer>
+                    <ListItemIcon
+                      sx={{
+                        color:
+                          page === item.id ? theme.palette.primary.main : "inherit",
+                      }}
+                    >
+                      {item.icon}
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={item.text}
+                      primaryTypographyProps={{
+                        fontWeight: page === item.id ? "bold" : "normal",
+                      }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+              ))}
+            </List>
+          </Drawer>
 
-        <Box
-          component="main"
-          sx={{
-            flexGrow: 1,
-            p: 3,
-            width: { md: `calc(100% - ${drawerWidth}px)` },
-            marginTop: "64px",
-          }}
-        >
-          {renderPage()}
+          <Box
+            component="main"
+            sx={{
+              flexGrow: 1,
+              p: 3,
+              width: { md: `calc(100% - ${drawerWidth}px)` },
+              marginTop: "64px",
+            }}
+          >
+            {renderPage()}
+          </Box>
         </Box>
-      </Box>
 
-      <Snackbar
-        open={!!error}
-        autoHideDuration={6000}
-        onClose={handleCloseError}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-      >
-        <Alert
+        <Snackbar
+          open={!!error}
+          autoHideDuration={6000}
           onClose={handleCloseError}
-          severity="warning"
-          sx={{ width: "100%" }}
+          anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
         >
-          {error}
-        </Alert>
-      </Snackbar>
-    </ThemeProvider>
+          <Alert
+            onClose={handleCloseError}
+            severity="warning"
+            sx={{ width: "100%" }}
+          >
+            {error}
+          </Alert>
+        </Snackbar>
+      </ThemeProvider>
+    </FirewallMessageProvider>
   );
 }
 
